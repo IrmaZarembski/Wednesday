@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Routine Catch Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+            touch-action: none;
+        }
+        
+        body {
+            background: #0f0f0f;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vmin;
+            height: 100vmin;
+            max-width: 800px;
+            max-height: 600px;
+            background: url('https://i.postimg.cc/x1mkX2W6/Снимок-экрана-2025-12-02-в-21-17-24.png') no-repeat center center;
+            background-size: cover;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #scoreDisplay, #livesDisplay {
+            position: absolute;
+            top: 10px;
+            font-size: 5vmin;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2vmin 3vmin;
+            border-radius: 10px;
+            z-index: 100;
+        }
+        
+        #scoreDisplay {
+            left: 10px;
+        }
+        
+        #livesDisplay {
+            right: 10px;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 3.2vmin;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            padding: 0 2vmin;
+        }
+        
+        #quizModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: all;
+            z-index: 10;
+        }
+        
+        .quiz-content {
+            background: #222;
+            padding: 5vmin;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        
+        .quiz-question {
+            font-size: 5.5vmin;
+            margin-bottom: 5vmin;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5vmin;
+        }
+        
+        .quiz-option {
+            padding: 3vmin;
+            background: #388e3c;
+            color: white;
+            font-size: 4.5vmin;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid #1b5e20;
+        }
+        
+        .quiz-option:hover, .quiz-option:active {
+            background: #2e7d32;
+            transform: scale(1.03);
+        }
+        
+        #gameOverScreen, #victoryScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 20;
+            pointer-events: all;
+        }
+        
+        .screen-content {
+            background: #1a1a1a;
+            padding: 5vmin;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 80%;
+            color: white;
+        }
+        
+        .screen-title {
+            font-size: 8vmin;
+            margin-bottom: 3vmin;
+            color: #ff7043;
+            font-weight: bold;
+        }
+        
+        .screen-message {
+            font-size: 5vmin;
+            margin-bottom: 4vmin;
+            color: #81d4fa;
+        }
+        
+        .btn {
+            background: #5c6bc0;
+            color: white;
+            border: none;
+            padding: 3vmin 8vmin;
+            font-size: 5vmin;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 3vmin;
+            transition: all 0.2s;
+            min-width: 200px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .btn:hover, .btn:active {
+            background: #3949ab;
+            transform: scale(1.05);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #f00;
+            border-radius: 50%;
+            animation: confetti-fall 5s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(600px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="uiOverlay">
+            <div id="scoreDisplay">Score: 0</div>
+            <div id="livesDisplay">Lives: ❤❤❤❤❤</div>
+            <div id="instructions">Move with mouse or arrow keys ← →</div>
+        </div>
+        
+        <div id="quizModal">
+            <div class="quiz-content">
+                <div class="quiz-question" id="quizQuestion"></div>
+                <div class="quiz-options" id="quizOptions"></div>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen">
+            <div class="screen-content">
+                <div class="screen-title">Game Over!</div>
+                <div class="screen-message">You missed too many objects!</div>
+                <button class="btn" id="restartButton">Play Again</button>
+            </div>
+        </div>
+        
+        <div id="victoryScreen">
+            <div class="screen-content">
+                <div class="screen-title">Congratulations!</div>
+                <div class="screen-message">You've mastered English daily routines!</div>
+                <button class="btn" id="playAgainButton">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const quizModal = document.getElementById('quizModal');
+        const quizQuestion = document.getElementById('quizQuestion');
+        const quizOptions = document.getElementById('quizOptions');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const restartButton = document.getElementById('restartButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        
+        const basketImage = new Image();
+        basketImage.src = 'https://i.postimg.cc/C5RXwmzK/acetone-2025122-2179-743.png';
+        
+        const fallingObjectImage = new Image();
+        fallingObjectImage.src = 'https://i.postimg.cc/J0svRPGz/acetone_2025122_173113_604.png';
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            const basketHeight = Math.min(100, canvas.height * 0.18);
+            const basketWidth = basketImage.complete ? 
+                (basketImage.width / basketImage.height) * basketHeight : 
+                basketHeight * 1.4;
+            
+            basket.width = basketWidth;
+            basket.height = basketHeight;
+            basket.x = canvas.width / 2 - basket.width / 2;
+            basket.y = canvas.height - basket.height - 10;
+        }
+        
+        let score = 0;
+        let lives = 5;
+        let gameRunning = true;
+        let fruits = [];
+        let basket = { x: 0, y: 0, width: 100, height: 70 };
+        let nextQuizScore = 5;
+        let quizPending = false;
+        let mouseX = 0;
+        let useMouse = false;
+        
+        // НОВЫЕ КВИЗЫ: русский → английский
+        const dailyRoutineQuizzes = [
+            { question: "одеваться", options: ["Get dressed", "Put on", "Wash"], answer: "Get dressed" },
+            { question: "раздеваться", options: ["Get undressed", "Take off", "Go to bed"], answer: "Get undressed" },
+            { question: "вставать с кровати", options: ["Get up", "Wake up", "Come home"], answer: "Get up" },
+            { question: "просыпаться", options: ["Wake up", "Get up", "Have a shower"], answer: "Wake up" },
+            { question: "идти спать", options: ["Go to bed", "Have dinner", "Study"], answer: "Go to bed" },
+            { question: "принимать душ", options: ["Have a shower", "Wash", "Get dressed"], answer: "Have a shower" },
+            { question: "надевать", options: ["Put on", "Take off", "Get dressed"], answer: "Put on" },
+            { question: "снимать", options: ["Take off", "Get undressed", "Wash"], answer: "Take off" },
+            { question: "мыть", options: ["Wash", "Have a shower", "Put on"], answer: "Wash" },
+            { question: "садиться в автобус", options: ["Catch the bus", "Go to school", "Come home"], answer: "Catch the bus" },
+            { question: "идти в школу", options: ["Go to school", "Study", "Do homework"], answer: "Go to school" },
+            { question: "приходить домой", options: ["Come home", "Have dinner", "Go to bed"], answer: "Come home" },
+            { question: "учиться", options: ["Study", "Do homework", "Have extra classes"], answer: "Study" },
+            { question: "делать домашку", options: ["Do homework", "Study", "Have extra classes"], answer: "Do homework" },
+            { question: "ходить на доп.занятия", options: ["Have extra classes", "Go to school", "Study"], answer: "Have extra classes" },
+            { question: "завтракать", options: ["Have breakfast", "Have lunch", "Have dinner"], answer: "Have breakfast" },
+            { question: "обедать", options: ["Have lunch", "Have breakfast", "Have dinner"], answer: "Have lunch" },
+            { question: "ужинать", options: ["Have dinner", "Have lunch", "Go to bed"], answer: "Have dinner" }
+        ];
+        
+        const allQuizzes = dailyRoutineQuizzes; // Только новые квизы
+        const FRUIT_SPAWN_INTERVAL = 130;
+        let framesSinceLastFruit = 0;
+        
+        function init() {
+            score = 0;
+            lives = 5;
+            gameRunning = true;
+            fruits = [];
+            nextQuizScore = 5;
+            quizPending = false;
+            framesSinceLastFruit = 0;
+            resizeCanvas();
+            updateUI();
+            gameOverScreen.style.display = 'none';
+            victoryScreen.style.display = 'none';
+            quizModal.style.display = 'none';
+            gameLoop();
+        }
+        
+        function updateUI() {
+            scoreDisplay.textContent = `Score: ${score}`;
+            livesDisplay.textContent = `Lives: ${'❤'.repeat(lives)}`;
+        }
+        
+        function createFruit() {
+            const fruitSize = Math.min(40, canvas.width * 0.08);
+            fruits.push({
+                x: Math.random() * (canvas.width - fruitSize),
+                y: -fruitSize,
+                width: fruitSize,
+                height: fruitSize,
+                speed: 0.3 + Math.random() * 1.4
+            });
+        }
+        
+        function drawBasket() {
+            if (basketImage.complete) {
+                ctx.drawImage(basketImage, basket.x, basket.y, basket.width, basket.height);
+            } else {
+                ctx.fillStyle = '#5d4037';
+                ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+            }
+        }
+        
+        function drawFruits() {
+            fruits.forEach(fruit => {
+                if (fallingObjectImage.complete) {
+                    ctx.drawImage(fallingObjectImage, fruit.x, fruit.y, fruit.width, fruit.height);
+                } else {
+                    ctx.fillStyle = '#4a148c';
+                    ctx.beginPath();
+                    ctx.arc(fruit.x + fruit.width/2, fruit.y + fruit.height/2, fruit.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function update() {
+            if (!gameRunning || quizPending) return;
+            
+            if (useMouse) {
+                basket.x = Math.max(0, Math.min(canvas.width - basket.width, mouseX - basket.width / 2));
+            }
+            
+            framesSinceLastFruit++;
+            if (framesSinceLastFruit >= FRUIT_SPAWN_INTERVAL) {
+                createFruit();
+                framesSinceLastFruit = 0;
+            }
+            
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                fruits[i].y += fruits[i].speed;
+                
+                if (fruits[i].y + fruits[i].height > basket.y && 
+                    fruits[i].x + fruits[i].width > basket.x && 
+                    fruits[i].x < basket.x + basket.width) {
+                    
+                    fruits.splice(i, 1);
+                    score++;
+                    updateUI();
+                    
+                    if (score >= nextQuizScore) {
+                        showQuiz();
+                    }
+                    
+                    if (score >= 50) {
+                        showVictory();
+                    }
+                }
+                else if (fruits[i].y > canvas.height) {
+                    fruits.splice(i, 1);
+                    lives--;
+                    updateUI();
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+        }
+        
+        function showQuiz() {
+            quizPending = true;
+            gameRunning = false;
+            
+            const quiz = allQuizzes[Math.floor(Math.random() * allQuizzes.length)];
+            // Формат: "What is 'русское слово' in English?"
+            quizQuestion.textContent = `What is "${quiz.question}" in English?`;
+            
+            quizOptions.innerHTML = '';
+            
+            quiz.options.forEach(option => {
+                const button = document.createElement('div');
+                button.className = 'quiz-option';
+                button.textContent = option;
+                button.addEventListener('click', () => {
+                    if (option !== quiz.answer) {
+                        score = Math.max(0, score - 5);
+                        updateUI();
+                    }
+                    
+                    nextQuizScore = Math.floor(score / 5) * 5 + 5;
+                    quizModal.style.display = 'none';
+                    quizPending = false;
+                    gameRunning = true;
+                });
+                quizOptions.appendChild(button);
+            });
+            
+            quizModal.style.display = 'flex';
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        function showVictory() {
+            gameRunning = false;
+            createConfetti();
+            victoryScreen.style.display = 'flex';
+        }
+        
+        function createConfetti() {
+            const colors = ['#ff7043', '#4fc3f7', '#66bb6a', '#ab47bc', '#ffd54f'];
+            const container = document.getElementById('gameContainer');
+            
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.width = (Math.random() * 8 + 4) + 'px';
+                confetti.style.height = confetti.style.width;
+                container.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+        
+        function gameLoop() {
+            if (!gameRunning && !quizPending) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            update();
+            drawBasket();
+            drawFruits();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning || quizPending) return;
+            useMouse = false;
+            
+            if (e.key === 'ArrowLeft') {
+                basket.x = Math.max(0, basket.x - 25);
+            } else if (e.key === 'ArrowRight') {
+                basket.x = Math.min(canvas.width - basket.width, basket.x + 25);
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (!gameRunning || quizPending) return;
+            useMouse = true;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+        });
+        
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            init();
+        });
+        
+        window.addEventListener('resize', () => {
+            if (gameRunning || quizPending) {
+                resizeCanvas();
+            }
+        });
+        
+        restartButton.addEventListener('click', init);
+        playAgainButton.addEventListener('click', init);
+    </script>
+</body>
+</html>
