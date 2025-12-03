@@ -299,7 +299,7 @@
         let mouseX = 0;
         let useMouse = false;
         
-        // НОВЫЕ КВИЗЫ: русский → английский
+        // Квизы: русский → английский
         const dailyRoutineQuizzes = [
             { question: "одеваться", options: ["Get dressed", "Put on", "Wash"], answer: "Get dressed" },
             { question: "раздеваться", options: ["Get undressed", "Take off", "Go to bed"], answer: "Get undressed" },
@@ -321,7 +321,7 @@
             { question: "ужинать", options: ["Have dinner", "Have lunch", "Go to bed"], answer: "Have dinner" }
         ];
         
-        const allQuizzes = dailyRoutineQuizzes; // Только новые квизы
+        const allQuizzes = dailyRoutineQuizzes;
         const FRUIT_SPAWN_INTERVAL = 130;
         let framesSinceLastFruit = 0;
         
@@ -423,22 +423,31 @@
             }
         }
         
+        // ✅ Правильный ответ в случайной позиции
         function showQuiz() {
             quizPending = true;
             gameRunning = false;
             
             const quiz = allQuizzes[Math.floor(Math.random() * allQuizzes.length)];
-            // Формат: "What is 'русское слово' in English?"
-            quizQuestion.textContent = `What is "${quiz.question}" in English?`;
+            const options = [...quiz.options];
+            const correctAnswer = quiz.answer;
             
+            if (!options.includes(correctAnswer)) {
+                options[0] = correctAnswer;
+            }
+            
+            // Перемешиваем варианты
+            const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+            
+            quizQuestion.textContent = `What is "${quiz.question}" in English?`;
             quizOptions.innerHTML = '';
             
-            quiz.options.forEach(option => {
+            shuffledOptions.forEach(option => {
                 const button = document.createElement('div');
                 button.className = 'quiz-option';
                 button.textContent = option;
                 button.addEventListener('click', () => {
-                    if (option !== quiz.answer) {
+                    if (option !== correctAnswer) {
                         score = Math.max(0, score - 5);
                         updateUI();
                     }
