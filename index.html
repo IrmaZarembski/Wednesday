@@ -299,7 +299,6 @@
         let mouseX = 0;
         let useMouse = false;
         
-        // Квизы: русский → английский
         const dailyRoutineQuizzes = [
             { question: "одеваться", options: ["Get dressed", "Put on", "Wash"], answer: "Get dressed" },
             { question: "раздеваться", options: ["Get undressed", "Take off", "Go to bed"], answer: "Get undressed" },
@@ -423,21 +422,30 @@
             }
         }
         
-        // ✅ Правильный ответ в случайной позиции
+        // ✅ ПОЛНОСТЬЮ СЛУЧАЙНЫЙ ПОРЯДОК — ПРАВИЛЬНЫЙ ОТВЕТ В ЛЮБОЙ ПОЗИЦИИ
         function showQuiz() {
             quizPending = true;
             gameRunning = false;
             
             const quiz = allQuizzes[Math.floor(Math.random() * allQuizzes.length)];
-            const options = [...quiz.options];
+            let options = [...quiz.options];
             const correctAnswer = quiz.answer;
             
             if (!options.includes(correctAnswer)) {
                 options[0] = correctAnswer;
             }
             
-            // Перемешиваем варианты
-            const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+            // Фишер–Йейтс: честное равномерное перемешивание
+            function shuffleArray(arr) {
+                const array = [...arr];
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+            
+            const shuffledOptions = shuffleArray(options);
             
             quizQuestion.textContent = `What is "${quiz.question}" in English?`;
             quizOptions.innerHTML = '';
@@ -451,7 +459,6 @@
                         score = Math.max(0, score - 5);
                         updateUI();
                     }
-                    
                     nextQuizScore = Math.floor(score / 5) * 5 + 5;
                     quizModal.style.display = 'none';
                     quizPending = false;
